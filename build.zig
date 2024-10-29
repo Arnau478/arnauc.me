@@ -9,6 +9,7 @@ pub fn build(b: *std.Build) void {
         .content_dir_path = "content",
         .assets_dir_path = "assets",
         .static_assets = &.{
+            "CNAME",
             "fonts/Vollkorn-Black.ttf",
             "fonts/Vollkorn-BlackItalic.ttf",
             "fonts/Vollkorn-Bold.ttf",
