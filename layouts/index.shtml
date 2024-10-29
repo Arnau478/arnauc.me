@@ -1,0 +1,15 @@
+<extend template="base.shtml">
+
+<title id="title" :text="$page.title"></title>
+
+<head id="head">
+    <style>
+        .post .title {
+            font-size: 1.5em;
+        }
+    </style>
+</head>
+
+<div id="content">
+    <ctx :html="$page.content()"></ctx>
+</div>

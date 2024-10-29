@@ -1,0 +1,8 @@
+---
+.title = "About me",
+.author = "Arnau Camprubí",
+.date = @date(""),
+.layout = "index.shtml",
+---
+
+Hi, my name is *Arnau Camprubí*.

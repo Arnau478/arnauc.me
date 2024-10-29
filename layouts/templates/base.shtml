@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head id="head">
+        <meta charset="UTF-8">
+        <meta name="description" content="Arnau Camprubí's website">
+        <meta name="twitter:description" content="Arnau Camprubí's website">
+        <meta name="twitter:title" content="$page.title.suffix(' - ').suffix($site.title)">
+        <meta property="og:type" content="website">
+        <meta property="og:title" content="$page.title.suffix(' - ').suffix($site.title)">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <title id="title"><super> - <ctx :text="$site.title"></ctx></title>
+        <link rel="stylesheet" type="text/css" href="$site.asset('fonts.css').link()">
+        <link rel="stylesheet" type="text/css" href="$site.asset('theme.css').link()">
+        <script src="https://kit.fontawesome.com/34402cb866.js" crossorigin="anonymous"></script>
+        <style>
+            html, body {
+                background-color: var(--col-base);
+                color: var(--col-text);
+                font-family: Vollkorn;
+                font-feature-settings: "lnum", "pnum";
+                margin: 0px;
+                padding: 0px;
+            }
+
+            #content {
+                max-width: 800px;
+                margin: 32px auto;
+            }
+
+            a {
+                color: var(--col-blue);
+            }
+
+            .centered {
+                align-self: center;
+                text-align: center;
+            }
+
+            #navbar {
+                display: block;
+                background-color: var(--col-crust);
+                margin: 0px;
+                padding: 0px;
+                line-height: 48px;
+                -webkit-user-select: none;
+                user-select: none;
+            }
+
+            #navbar a, #navbar .page-title {
+                color: inherit;
+                margin: 16px;
+            }
+
+            #navbar .navbar-sep::after {
+                content: "\00a0";
+                background-color: var(--col-text);
+                margin: 0px;
+            }
+
+            .page-title {
+                font-weight: 700;
+                text-decoration: none;
+            }
+
+            .page-title:hover {
+                text-decoration: underline;
+            }
+        </style>
+        <super>
+    </head>
+    <body>
+        <div id="navbar">
+            <ctx page="$site.page('/')">
+                <a href="$ctx.page.link()" class="$ctx.page.isCurrent().then('navbar-current').prefix('page-title ')">arnauc.me</a>
+            </ctx>
+            <span class="navbar-sep"></span>
+            <ctx page="$site.page('blog')">
+                <a href="$ctx.page.link()" :text="$ctx.page.title" class="$ctx.page.isCurrent().then('navbar-current')"></a>
+            </ctx>
+        </div>
+        <div id="content">
+            <super>
+        </div>
+    </body>
+</html>

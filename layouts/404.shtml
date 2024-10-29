@@ -1,0 +1,21 @@
+<extend template="base.shtml">
+
+<title id="title" :text="$page.title"></title>
+
+<head id="head">
+    <style>
+        #content {
+            text-align: center;
+        }
+
+        .error-number {
+            font-size: 6em;
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<div id="content">
+    <div class="error-number">404</div>
+    <ctx :html="$page.content()"></ctx>
+</div>

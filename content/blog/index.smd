@@ -1,0 +1,6 @@
+---
+.title = "Blog",
+.author = "Arnau Camprubí",
+.date = @date(""),
+.layout = "blog.shtml",
+---

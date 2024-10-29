@@ -1,0 +1,10 @@
+---
+.title = "Not found",
+.author = "Arnau Camprubí",
+.date = @date(""),
+.layout = "404.shtml",
+---
+
+*Here be dragons...*
+
+Return to [safety](/)

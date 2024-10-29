@@ -1,0 +1,50 @@
+<extend template="base.shtml">
+
+<title id="title" :text="$page.title"></title>
+
+<head id="head">
+    <style>
+        .post .title {
+            font-size: 1.5em;
+        }
+
+        .post ul.tags {
+            display: inline;
+            margin: 0px;
+            margin-left: 32px;
+            padding: 0px;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .post ul.tags > li {
+            display: inline;
+            margin: 4px;
+            padding: 0px 2px;
+            border: 1px solid var(--col-green);
+            color: var(--col-green);
+            font-size: 0.8em;
+            font-weight: bolder;
+            border-radius: 4px;
+        }
+
+        .post ul.tags > li > a {
+            color: inherit;
+            text-decoration: inherit;
+        }
+    </style>
+</head>
+
+<div id="content">
+    <ctx :html="$page.content()"></ctx>
+
+    <h1>Posts</h1>
+    <div :loop="$page.subpages()">
+        <div class="post">
+            <a :text="$loop.it.title" href="$loop.it.link()" class="title"></a>
+            <ul :loop="$loop.it.tags" class="tags">
+                <li><a :text="$loop.it" href="#"></a></li>
+            </ul>
+        </div>
+    </div>
+</div>
