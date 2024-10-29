@@ -3,6 +3,9 @@
 .author = "Arnau Camprubí",
 .date = @date(""),
 .layout = "404.shtml",
+.aliases = [
+    "404.html",
+],
 ---
 
 *Here be dragons...*
