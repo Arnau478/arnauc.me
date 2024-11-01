@@ -25,7 +25,8 @@
 
             #content {
                 max-width: 800px;
-                margin: 32px auto;
+                margin: 16px auto;
+                padding: 16px;
             }
 
             a {
