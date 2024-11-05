@@ -1,0 +1,46 @@
+---
+.title = "Switching to NixOS",
+.author = "Arnau Camprubí",
+.date = @date("2024-11-05"),
+.layout = "post.shtml",
+.tags = ["nix"],
+---
+
+I've been using [Arch Linux](https://archlinux.org) for 3 years now, both on my laptop and my PC. Recently, due to [natural disasters](https://en.wikipedia.org/wiki/October_2024_Spain_floods) where I live (don't worry, I'm fine), university lessons were canceled, so I had plenty of time to do a fresh Linux install. This time, instead of Arch Linux, I decided I wanted to try NixOS. I have to say, *I really like it*.
+
+# Hesitation
+
+I hate to admit it, but I didn't like NixOS much before trying it out. The Nix syntax looked weird, and the fact that *nix flakes* are an experimental feature didn't help. However, all that changed when I tried using it. So, if you're on a similar position, **don't hesitate**, just try it. You can always reinstall your old *distro*.
+
+# Pros
+
+To prove my point, here are some things I really like about the whole NixOS/Nix system.
+
+## Easy-to-share configurations
+
+Having every single program configured in one file (or a structure of file) makes it easier to share them when you have multiple devices. No more configuring things twice.
+
+## Development environments
+
+I have many projects made in [Zig](https://ziglang.org). Being a *pre-1.0* project, some projects use the latest release, while others use nightly/master builds. It was a nightmare to switch zig versions all the time. Now, instead of having zig installed globally, I start a nix development shell, which adds to the `PATH` the correct Zig version from the nix store.
+
+Now even [this website](https://github.com/Arnau478/arnauc.me) has a development environment!
+
+## Garbage tracking
+
+In my Arch Linux installation, I probably had over 50 packages that I used once and didn't want on my system anymore. But *I didn't know*. NixOS solves this in two ways.
+
+- **Nix shell**: For single-use packages, you can start a *nix shell*. This will add it to the nix store, and start a shell with that package on the `PATH`. However, nix knows it's not referenced by your configuration, so it will remove it once you trigger the garbage collector.
+- **Nix config**: If you *really* want something on your system, you add it to your config. But it won't simply be installed, it will be also *listed on you config*. So you know which packages you have explicitly installed at all times.
+
+## Easy packaging
+
+Adding a package to the *AUR* (Arch User Repository) is not easy. Having a flake on your repo that you update alongside your codebase is *extremely* easy and convenient.
+
+# My config
+
+If you want to take a look at my config, it's available [on GitHub](https://github.com/Arnau478/nixos-config). As you might already know, I'm obsessed with file organization, specially when it comes to source code. I'm still working on organizing it, but it's already pretty modular.
+
+---
+
+TLDR: If you haven't done so yet, I highly recommend trying NixOS. You won't regret it.
