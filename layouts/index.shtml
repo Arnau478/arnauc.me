@@ -12,4 +12,5 @@
 
 <div id="content">
     <ctx :html="$page.content()"></ctx>
+    <a rel="me" href="https://github.com/Arnau478" target="_blank">Github</a>
 </div>
