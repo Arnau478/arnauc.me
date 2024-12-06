@@ -3,6 +3,7 @@
 <title id="title" :text="$page.title"></title>
 
 <head id="head">
+    <link rel="me" href="https://chipburners.club/@arnau">
     <style>
         .post .title {
             font-size: 1.5em;
