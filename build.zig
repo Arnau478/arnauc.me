@@ -2,6 +2,12 @@ const std = @import("std");
 const zine = @import("zine");
 
 pub fn build(b: *std.Build) void {
+    const typst = b.addSystemCommand(&.{ "typst", "compile" });
+    typst.addArg("--font-path");
+    typst.addDirectoryArg(b.path("cv"));
+    typst.addFileArg(b.path("cv/main.typ"));
+    const cv = typst.addOutputFileArg("cv.pdf");
+
     zine.website(b, .{
         .title = "Arnau Camprubí",
         .host_url = "https://arnauc.me",
@@ -22,6 +28,9 @@ pub fn build(b: *std.Build) void {
             "fonts/Vollkorn-Regular.ttf",
             "fonts/Vollkorn-SemiBold.ttf",
             "fonts/Vollkorn-SemiBoldItalic.ttf",
+        },
+        .build_assets = &.{
+            .{ .name = "cv", .lp = cv, .install_path = "cv.pdf", .install_always = true },
         },
     });
 }
