@@ -27,6 +27,16 @@
 = Work experience
 - Security alarm company #h(1fr) summer of 2023
 
+= Languages
+
+#table(
+  columns: 2,
+  stroke: none,
+  [*Valencian*], [native],
+  [*Spanish*], [native],
+  [*English*], [C1 level],
+)
+
 = Personal projects
 My main personal project is _hevi_, a *hex viewer* packed with features that follows first principles.
 
