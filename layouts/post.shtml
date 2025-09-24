@@ -1,17 +1,59 @@
 <extend template="base.shtml">
-
-<title id="title" :text="$page.title"></title>
-
 <head id="head">
-    <style>
-        .title {
-            font-size: 2.5em;
-            font-weight: 800;
-        }
-    </style>
-</head>
+  <style>
+    #prev-next {
+     display: flex;
+     flex-direction: row;
+     justify-content: space-between;
+     margin-top: 40px;
+    }
 
-<div id="content">
-    <div :text="$page.title" class="title"></div>
-    <ctx :html="$page.content()"></ctx>
-</div>
+    figure {
+      align-self: center;
+      text-align: center;
+      font-style: italic;
+    }
+
+    .post {
+      display:flex;
+      flex-direction: column;
+    }
+
+    #footnotes {
+        font-size: 0.85em;
+        color: #bbb;
+    }
+
+    #footnotes p {
+        display: inline;
+    }
+  </style>
+</head>
+<body id="body">
+  <h1 :text="$page.title"></h1>
+  <div class="post" :html="$page.content()"></div>
+  <div id="footnotes" :if="$page.footnotes?()">
+    <ol :loop="$if">
+      <li id="$loop.it.def_id">
+        <ctx :html="$loop.it.html()"></ctx>
+        <ctx :loop="$loop.it.ref_ids">
+          <a href="$loop.it.prefix('#')">↑</a>
+        </ctx>
+      </li>
+    </ol>
+  </div>
+  <div id="prev-next">
+    <div :if="$page.prevPage?()">
+      <a href="$if.link()">
+        ←
+        <span :text="$if.title"></span>
+      </a>
+    </div>
+    <div :if="$page.nextPage?()">
+      <a href="$if.link()">
+        <span :text="$if.title"></span>
+        →
+      </a>
+    </div>
+  </div>
+</body>

@@ -1,58 +1,25 @@
 <extend template="base.shtml">
-
-<title id="title" :text="$page.title"></title>
-
 <head id="head">
-    <style>
-        .post {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 24px;
-        }
-
-        .post .title {
-            font-size: 1.5em;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .post ul.tags {
-            margin: 0px;
-            padding: 0px;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-
-        .post ul.tags > li {
-            display: inline;
-            margin: 4px;
-            padding: 0px 2px;
-            border: 1px solid var(--col-green);
-            color: var(--col-green);
-            font-size: 0.8em;
-            font-weight: bolder;
-            border-radius: 4px;
-        }
-
-        .post ul.tags > li > a {
-            color: inherit;
-            text-decoration: inherit;
-        }
-    </style>
+  <style>
+    .date {
+      font-size: 0.9em;
+    }
+    
+    h3.title {
+      margin-top: 0;
+    }
+  </style>
 </head>
-
-<div id="content">
-    <ctx :html="$page.content()"></ctx>
-
-    <h1>Posts</h1>
+<body id="body">
+  <h1 :text="$page.title"></h1>
+  <div :html="$page.content()"></div>
+  <div>
+    <h2>Posts</h2>
     <div :loop="$page.subpages()">
-        <div class="post">
-            <a :text="$loop.it.title" href="$loop.it.link()" class="title"></a>
-            <ul :loop="$loop.it.tags" class="tags">
-                <li><a :text="$loop.it" href="#"></a></li>
-            </ul>
-        </div>
+      <span class="date" :text="$loop.it.date.format('January 02, 2006')"></span>
+      <h3 class="title">
+        <a href="$loop.it.link()" :text="$loop.it.title"></a>
+      </h3>
     </div>
-</div>
+  </div>
+</body>

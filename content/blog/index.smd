@@ -1,6 +1,14 @@
 ---
 .title = "Blog",
-.author = "Arnau Camprubí",
-.date = @date(""),
+.date = @date("1990-01-01T00:00:00"),
+.author = "Sample Author",
 .layout = "blog.shtml",
----
+.alternatives = [{ 
+    .name = "rss",
+    .layout = "blog.xml", 
+    .output = "index.xml",
+}],
+.draft = false,
+--- 
+
+This blog also has an [RSS feed]($link.alternative('rss')).

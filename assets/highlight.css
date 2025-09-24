@@ -1,0 +1,60 @@
+:root {
+  --light-yellow: #e5c07b;
+  --dark-yellow: #d19a66;
+  --blue: #61afef;
+  --cyan: #56b6c2;
+  --light-red: #e06c75;
+  --dark-red: #be5046;
+  --comment-gray: #5c6370;
+  --magenta: #c678dd;
+}
+
+pre {
+  border: 1px solid #eee;
+  padding: 10px 10px;
+}
+
+code.ziggy {
+  color: var(--cyan);
+}
+
+code.ziggy .keyword,
+code.ziggy .type {
+  color: var(--light-yellow);
+}
+
+code.ziggy .string {
+  color: var(--dark-yellow);
+}
+
+code.ziggy .numeric.constant {
+  color: var(--magenta);
+}
+
+code.ziggy .function {
+  color: var(--blue);
+}
+
+code.asm {
+  color: var(--light-yellow);
+}
+
+code.asm .variable {
+  color: var(--blue);
+}
+
+code.asm .function {
+  color: var(--magenta);
+}
+
+code.asm .constant_numeric_integer {
+  color: var(--cyan);
+}
+
+code.asm .comment {
+  color: var(--comment-gray);
+}
+
+code.asm .type {
+  color: var(--light-red);
+}

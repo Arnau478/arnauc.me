@@ -1,0 +1,211 @@
+---
+.title = "Creating a game in assembly",
+.date = @date("2025-10-07T00:00:00"),
+.author = "Arnau Camprubí",
+.layout = "post.shtml",
+--- 
+
+Coding in assembly imposes some challenges and difficulties that make it **fun**, the same way a puzzle is fun. I recently decided to create a game in assembly. Not for the final result, but for the fun of writing assembly. This is the first post about the project. I might not "finish" it, but again, it's not the goal of the project anyway.
+
+I wanted it to be x86 (as that's the architecture family I know the most), but I didn't know which specific architecture would be best. At the end, I decided to do it for 16-bit [real mode](https://en.wikipedia.org/wiki/Real_mode), as that's the mode _every_ x86 CPU boots in. That way, I am as close to the hardware as possible. Also, writing assembly for a 16-bit CPU is more challenging than a 32 or 64-bit one -- and therefore more fun.
+
+[A "challenging" to "fun" chart]($image.asset("fun-chart.svg"))
+
+# Booting
+
+When a computer powers on[^boot], the BIOS looks for disks containing a magic byte sequence at the end of the first 512-byte sector. When it finds one, it loads the entire sector into memory and jumps to it.
+
+The `boot.asm` file looks like this:
+
+```asm
+org 0x7c00 ; BIOS loads us at 0x7c00, absolute references should have this offset
+BITS 16 ; Default to 16-bit mode instructions
+
+start:
+    ; All the code goes here...
+
+times 510-($-$$) db 0 ; Pad with zeros to make it 510 bytes long
+dw 0xAA55 ; Add two more bytes (the magic bytes)
+```
+
+This does works, and the code under `start` will run. The `start` label is used here to make it easier to understand. In reality the BIOS just jumps to `0x7c00`, so it will execute the first instruction in the boot sector.
+
+Now we can write the game, and that's it! Well, not quite. As our game grows larger and larger, it will eventually be **too big** to fit in the 512-byte boot sector. The solution is to write a boot sector that _loads more sectors_, and put the game on those extra sectors. In case you're curious on how this works (_it's pretty low-level, feel free to skip it_), here you have the code:
+
+```asm
+org 0x7c00
+BITS 16
+
+SECTORS_TO_LOAD equ 64 ; 32 KiB
+
+start:
+    ; Disable interrupts
+    cli
+
+    ; Set the stack on segment 0 (ss=0) and address 0x7c00 (sp=0x7c00)
+    ; Since the stack grows downwards, it won't interfere with our code
+    xor ax, ax
+    mov ss, ax
+    mov sp, 0x7c00
+
+    ; We will load the "stage 2" code at 0x1000:0x0000 (physical address 0x10000)
+    mov ax, 0x1000
+    mov es, ax
+    xor bx, bx
+
+    ; Start from cylinder 0, head 0, sector 2 (sector 1 is the boot sector)
+    xor ch, ch ; cylinder
+    xor dh, dh ; head
+    mov cl, 2 ; sector
+    mov si, SECTORS_TO_LOAD
+
+load_loop:
+    ; Call the BIOS function to read the sector
+    mov ah, 0x02 ; read sectors
+    mov al, 1 ; 1 sector
+    int 0x13
+    jc disk_error
+
+    ; Increment the offset by 512
+    add bx, 512
+
+    ; CHS increment logic
+    inc cl
+    cmp cl, 19
+    jl cont_chs
+    mov cl, 1
+    inc dh
+    cmp dh, 2
+    jl cont_chs
+    mov dh, 0
+    inc ch
+
+cont_chs:
+    ; Loop if there are sectors left to load
+    dec si
+    jnz load_loop
+
+    ; Set the data segment (ds) to 0x1000
+    mov ax, 0x1000
+    mov ds, ax
+
+    ; Far-jump to code segment 0x1000 at offset 0x0000
+    jmp 0x1000:0x0000
+
+disk_error:
+    ; Report the error...
+
+    ; Halt forever
+    jmp $
+
+times 510-($-$$) db 0
+dw 0xAA55
+```
+
+That's it! Now, we can append a "stage 2" after the boot sector in our binary, and it will load and run it.
+
+# VGA
+
+Most games have graphics. But right now, how do we draw to the screen? That's where VGA modes come in. We can ask the BIOS (via [BIOS services](https://en.wikipedia.org/wiki/BIOS_interrupt_call)) to set up a specific VGA mode. Each mode has a set resolution, color depth, etc. We'll be using [VGA mode `0x13`](https://en.wikipedia.org/wiki/Mode_13h) (also called mode `13h`). It has a resolution of 320 by 200 pixels and a 256-color palette.
+
+So, before we draw anything, we must set up mode `0x13`. We do so with the [BIOS interrupt `0x10`](https://en.wikipedia.org/wiki/INT_10H) with `ah=0`. After the interrupt call, the video mode will be set to `al`.
+
+```asm
+    mov ah, 0x00
+    mov al, 0x13
+    int 0x10
+```
+
+Now, at physical address `0xa0000` we have the framebuffer. Because of the way [segmentation](https://en.wikipedia.org/wiki/X86_memory_segmentation#Real_mode) works, this corresponds to segment `0xa000` at offset `0x0000`. So, we could simply do something like:
+```asm
+    ; Set es=0xa000
+    mov ax, 0xa000
+    mov es, ax
+
+    ; Set di=0 (top-left pixel)
+    xor di, di
+
+    ; Write at byte 0xa000:0x0000
+    mov byte [es:di], 0x04 ; dark red
+```
+
+The problem is that the computer is repeatidly displaying what's on the buffer. So, what happens if it displays the framebuffer while we're still drawing a frame? The user will experience visual artifacts, such as [taring](https://en.wikipedia.org/wiki/Screen_tearing). The solution is [double buffering](https://en.wikipedia.org/wiki/Multiple_buffering). We'll draw to a side buffer and, when we're done drawing the frame, we copy it to the actual framebuffer.
+
+[A timeline of a program with double buffering]($image.asset("double-buffering.svg"))
+
+As you can see in the diagram, while the drawing buffer contains invalid (incomplete) frames most of the times, the actual framebuffer **always contains a valid frame**.
+
+To do this, we can write to our own framebuffer at address, say, `0x90000`, and then copy it to `0xa0000` once we're done. To do this copying, we can write this:
+
+```asm
+present_framebuffer:
+    pusha ; push all the general registers to the stack
+    push ds
+    push es
+
+    ; set es=0xa000
+    mov ax, 0xa000
+    mov es, ax
+
+    ; set ds=0x9000
+    mov ax, 0x9000
+    mov ds, ax
+
+    ; set di=0 and si=0
+    xor di, di
+    xor si, si
+
+    ; set cx to the length of the framebuffer (in words)
+    mov cx, SCREEN_WIDTH*SCREEN_HEIGHT/2
+
+    ; copy cx words from [(ds):si] to [es:di]
+    cld
+    rep movsw
+
+    pop es
+    pop ds
+    popa ; pop all the general registers from the stack
+    ret ; jump to the popped address (to return from a `call` instruction)
+```
+
+Then, when we're done rendering, we do `call present_framebuffer`.
+
+# Calling convention
+
+"Functions" and "arguments" are high-level concepts that mean nothing in assembly. That's why, if we want to have similar constructs, we must establish a _calling convention_.
+
+For this project, I used a calling convention similar to [cdecl](https://en.wikipedia.org/wiki/X86_calling_conventions#cdecl). The arguments are pushed to the stack before calling the function. Then, the function is called using the `call` instruction, which pushes the return address and jumps. When it returns, it's the caller responsibility to clean up the stack. So, a basic call might look like:
+
+```asm
+    push grass_texture ; texture address
+    push 32 ; texture width
+    push 32 ; texture height
+    push 100 ; x position
+    push 100 ; y position
+    call draw_texture
+    add sp, 10
+```
+
+Having the responsibility to clean the stack on the caller, combined with clever argument order, allows us to do something really interesting. Often, you want to draw the same texture multiple times, at different positions. Since only the last two arguments change, we can do the following:
+
+```asm
+    push grass_texture ; texture address
+    push 32 ; texture width
+    push 32 ; texture height
+    push 100 ; x position
+    push 100 ; y position
+    call draw_texture
+    add sp, 4
+    push 200 ; x position
+    push 50 ; y position
+    call draw_texture
+    add sp, 10
+```
+
+# The actual game
+
+As for the game itself, I have little to show. I have a tile-based terrain renderer, a scrollable camera, and some basic UI elements. I haven't even fully decided the gameplay style yet. I hope in the next post about the project I can show some gameplay, but for now I don't have anything worth showing.
+
+To give a sense of how low-level the development is, the project already has more than 600 lines of assembly and I barely have anything. So don't expect much.
+
+[^boot]: Assuming [BIOS legacy boot](https://en.wikipedia.org/wiki/BIOS#Boot_process). There are other ways to boot, like [UEFI](https://en.wikipedia.org/wiki/UEFI).

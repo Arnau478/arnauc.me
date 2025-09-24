@@ -1,10 +1,11 @@
 ---
-.title = "About me",
-.author = "Arnau Camprubí",
-.date = @date(""),
+.title = "Homepage",
+.date = @date("1990-01-01T00:00:00"),
+.author = "Sample Author",
 .layout = "index.shtml",
----
+.draft = false,
+--- 
 
-Hi, my name is *Arnau Camprubí*.
+My name is **Arnau Camprubí**. I study computer science at [UPV](https://upv.es).
 
-Interested in OS development. I study computer science at the [UPV](https://www.upv.es).
+I [post](/blog) about CS-related topics.
