@@ -129,7 +129,7 @@ Now, at physical address `0xa0000` we have the framebuffer. Because of the way [
     mov byte [es:di], 0x04 ; dark red
 ```
 
-The problem is that the computer is repeatidly displaying what's on the buffer. So, what happens if it displays the framebuffer while we're still drawing a frame? The user will experience visual artifacts, such as [taring](https://en.wikipedia.org/wiki/Screen_tearing). The solution is [double buffering](https://en.wikipedia.org/wiki/Multiple_buffering). We'll draw to a side buffer and, when we're done drawing the frame, we copy it to the actual framebuffer.
+The problem is that the computer is repeatidly displaying what's on the buffer. So, what happens if it displays the framebuffer while we're still drawing a frame? The user will experience visual artifacts, such as [tearing](https://en.wikipedia.org/wiki/Screen_tearing). The solution is [double buffering](https://en.wikipedia.org/wiki/Multiple_buffering). We'll draw to a side buffer and, when we're done drawing the frame, we copy it to the actual framebuffer.
 
 [A timeline of a program with double buffering]($image.asset("double-buffering.svg"))
 
