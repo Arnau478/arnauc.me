@@ -12,6 +12,8 @@
 pre {
   border: 1px solid #eee;
   padding: 10px 10px;
+  max-width: 100%;
+  overflow-x: scroll;
 }
 
 code.ziggy {
