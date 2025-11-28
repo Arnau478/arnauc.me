@@ -1,0 +1,86 @@
+---
+.title = "Finding vulnerabilities in a cleaning robot",
+.date = @date("2025-11-28T00:00:00"),
+.author = "Arnau Camprubí",
+.layout = "post.shtml",
+--- 
+
+I've had a _round cleaning robot of a certain brand_ for quite some time now. The other day I noticed a suspicious micro USB port on the bottom. So I had to do some poking around. This is the story of how I got root shell access to my cleaning robot.
+
+After connecting it to my computer, the first thing I did was a `lsusb`. It basically shows all the connected USB devices. When I saw the list, I immediately got excited.
+
+```
+Bus 001 Device 005: ID 18d1:d002 Google Inc. Nexus 4 (debug)
+```
+
+Wait, so it's [a phone](https://en.wikipedia.org/wiki/Nexus_4)? No. But the fact that it's showing up as an android device means it probably has ADB (Android Debug Bridge) support.
+
+I fired `adb shell`, hoping to get access right away. But instead I was prompted for login. Weird. Apparently, `/bin/login` was being executed, instead of a shell. I get why they would ask for a login, but it's *not the right way* to secure a device. `adb shell` is not the only way to access it. `adb` has commands like `push` and `pull` (which send and receive files, respectively). And, when using those commands, the shell (or in this case `/bin/login`) is not executed.
+
+So, a simple `adb pull /etc` can get us `/etc/passwd`:
+
+```
+root:x:0:0:root:/root:/bin/ash
+daemon:*:1:1:daemon:/var:/bin/false
+ftp:*:55:55:ftp:/home/ftp:/bin/false
+network:*:101:101:network:/var:/bin/false
+nobody:*:65534:65534:nobody:/var:/bin/false
+dnsmasq:x:453:453:dnsmasq:/var/run/dnsmasq:/bin/false
+```
+
+We can see the password field for `root` is `x`, which means the password is actually stored in `/etc/shadow`, hashed. We read it the same way:
+
+```
+root:$1$trVg0hig$L.xDOM91z4d/.8FZRnr.h1:17752:0:99999:7:::
+daemon:*:0:0:99999:7:::
+ftp:*:0:0:99999:7:::
+network:*:0:0:99999:7:::
+nobody:*:0:0:99999:7:::
+dnsmasq:x:0:0:99999:7:::
+```
+
+The password is stored in *MD5*. So, that's it, we can simply crack it.
+
+Or rather, we can delete that `x` in `/etc/passwd` using `adb push`, and the password will be completely diasbled (not like they use PAM or anything...).
+
+Now, if we do `adb shell`, we are prompted for the user, but we no longer need the password.
+
+```
+TinaLinux login: root
+
+
+BusyBox v1.24.1 () built-in shell (ash)
+
+ _____  _              __     _
+|_   _||_| ___  _ _   |  |   |_| ___  _ _  _ _
+  | |   _ |   ||   |  |  |__ | ||   || | ||_'_|
+  | |  | || | || _ |  |_____||_||_|_||___||_,_|
+  |_|  |_||_|_||_|_|  Tina is Based on OpenWrt!
+ ----------------------------------------------
+ Tina Linux (Neptune, 57513AA3)
+ ----------------------------------------------
+root@TinaLinux:~#
+```
+
+There you go, we have a shell!
+
+# Network access
+
+Sure, someone can get root access to your cleaning robot, but they'll need to physically connect to it. At that point they might as well steal it. So it's not a big deal, right?
+
+Right...?
+
+Guess what, the cleaning robot is running an SSH server, with password login enabled. So you don't even need to connect via ADB, you can connect via SSH.
+
+**Anyone on the local network** can deploy their code to your cleaning robot, even in an automated way (the password is the same for all the robots of a specific model). In some cases, a leftover open port in the home router firewall configuration[^open-port] can allow that kind of attack from anywhere on the internet.
+
+# Key takeaways
+
+Multiple things can be learned from this.
+- If you want to add authentication to something, don't implement your own hacky and quick solution -- do it the intended way.
+- Don't allow password login for SSH. Or, if you do so, don't use MD5.
+- Never assume your device will be behind a NAT. Don't make its security dependant on that.
+
+Thanks for reading! `;)`
+
+[^open-port]: It's actually a (relatively) common situation. You open port 22 and forward it to, say, a raspberry pi. Time passes, the project using the raspberry pi ends, and you forget to remove the port forwarding rule. Now, the cleaning robot wants to connect to your network. It asks the DHCP for an IP, and the DHCP reuses the old raspberry pi IP. Now your cleaning robot is accessible by anyone on the internet.
