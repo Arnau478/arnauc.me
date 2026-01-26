@@ -60,3 +60,19 @@ code.asm .comment {
 code.asm .type {
   color: var(--light-red);
 }
+
+code.html .tag {
+  color: var(--dark-yellow);
+}
+
+code.html .attribute {
+  color: var(--magenta);
+}
+
+code.html .string {
+  color: var(--light-red);
+}
+
+code.html .constant {
+  color: var(--comment-gray);
+}

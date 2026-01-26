@@ -1,0 +1,191 @@
+---
+.title = "How web browsers work",
+.date = @date("2026-01-26T00:00:00"),
+.author = "Arnau Camprubí",
+.layout = "post.shtml",
+---
+
+A few years ago, I started going down the rabbithole of _browser engines_. I wanted to write one, so I started looking for resources. None were as detailed as I had hoped. So, I decided to simply read the official specification (rather, the set of interleaved specifications). Understanably, the _spec_ didn't explain how a borwser engine works, just what its result should be. So I started designing a browser engine -- just to find out some time later that my design was horrible from the beginning. Well... I restarted the entire project from scratch **more than 10 times**.
+
+The current iteration has lasted for half a year so far, and I'm still confident it is the right design. Finally, I feel perpared to write something I wish existed when I started: an explanation of **how browsers actually work**.
+
+# The borwser and the browser engine
+
+A _browser_ and a _browser engine_ are two distinct things. The program you install on your computer is the _browser_. It is composed of two parts: the _chrome_ (not to be confused with the _browser_ of the same name) and the _browser engine_.
+
+The _browser engine_ is the part that parses HTML, does layout or runs JS, whereas you can think of the _chrome_ as "the UI". The _browser engine_ doesn't know anything about tabs, windows or downloads, those are all part of the _chrome_. For example, Firefox, Chrome or Opera are _browsers_. Blink, WebKit or Gecko are _browser engines_. This post will be centered around the _browser engine_, since it's the core of the browser (and the interesting part).
+
+# The main pipeline
+
+The main task for the browser engine is transforming an HTML source into a drawable page. The output of this whole pipeline will be a _draw list_ or _display list_. It is a list of simple commands like "draw a rectangle of color _C_ at position (_X_,_Y_) and of size _W_ by _H_". But doing this directly would be absurdly hard. So we split it into simpler tasks, forming a pipeline.
+
+[A diagram of the browser engine pipeline]($image.asset("pipeline.svg"))
+
+I will explain, one by one, each of the components of the pipeline.
+
+## HTML tokenizer
+
+The HTML tokenizer takes HTML source (text) as input and returns a list of tokens. Tokens are the most basic syntactic units. A comment is a token, a tag is a token, text is a token, etc. As an example, the following HTML source would be tokenized as follows:
+
+```html
+<!DOCTYPE html>
+<html>
+  <body>
+    <div id="foo">
+      Hello world
+    </div>
+  </body>
+</html>
+```
+
+- Doctype token
+- Start tag token for `html` (no attributes)
+- Start tag token for `body` (no atrributes)
+- Start tag token for `div` (with `id="foo"`)
+- Text token `"Hello world"`
+- End tag token for `div`
+- End tag token for `body`
+- End tag token for `html`
+
+It is usually a simple state machine, [following the spec](https://html.spec.whatwg.org/#tokenization).
+
+## HTML parser
+
+The HTML parser (sometimes called the _tree constructor_) takes tokens as input and generates a DOM (Document Object Model). It does this by first creating an empty DOM and, for each token, modifying it incrementally. Again, this is pretty well-defined [in the spec](https://html.spec.whatwg.org/#tree-construction). The code from before would generate a DOM similar to:
+
+- Document
+  - `html`
+    - `body`
+      - `div`
+        - `#text "Hello world"`
+
+Notice that it is in this step that **structure** is introduced. The DOM is where _elements_ live, and where modifications from javascript happen (causing a cascading effect onwards).
+
+## CSS tokenizer and parser
+
+With the CSS sources we found in the DOM (`<script>`) and the ones included in the browser (the so-called _user agent CSS_) we do a process similar to the HTML tokenizer and parser. We obtain a CSSOM (CSS Object Model).
+
+## Style engine
+
+This stage takes the DOM and CSSOM and _combines_ them, by computing the style properties _for every element_, producing the _style tree_. Think of the _style tree_ as a DOM with extra information for each element.
+
+This is where CSS selector matching is checked. If we have a rule like `.foo { color: red }`, it will modify the `color` property of each element with the class `foo`. Other elements will have the default value for that property.
+
+## Box generation
+
+Elements are an abstract concept of the DOM. _Boxes_, on the other hand, are "physical" boxes. You can think of them as rectangles with size, position, etc. But before we can give them size and position values, we need to generate the boxes. From the _style tree_, we create a _layout tree_, where nodes are _boxes_. Generally, an element translates into a single box. But it's not always the case. For example, an element with `display: none` generates no box at all (and neither do their descendants). In some cases, an element can even generate multiple boxes (think of a `<ul>`, it has a "marker" box and a "content" box).
+
+Boxes also have padding, margin, border, color, border color, display type (e.g. `block` or `inline`), etc. All these properties are derived from the associated style in the _style tree_. Only the position and size properties are left undefined (for now).
+
+## Reflow
+
+We now have a tree of boxes (the _layout tree_). Reflow modifies the tree, giving it position and size information, according to a layout scheme. This is probably the most complex stage of the entire main pipeline, but I'll do my best to explain it properly.
+
+There are many types of flow, each with its own reflow algorithm. Most elements follow _normal flow_ (`position: static`). In normal flow, boxes are laid out depending on many parameters, but mainly:
+- Block-level or inline-level
+- Block container or inline container
+
+In case you're curious, this is where `display: inline-block` does its thing. Take a look at the mappings:
+
+| Value of `display` | Box level    | Container type   |
+| ------------------ | ------------ | ---------------- |
+| `block`            | block-level  | block container  |
+| `inline`           | inline-level | inline container |
+| `inline-block`     | inline-level | block container  |
+
+Let's assume, for the sake of simplicity, that everything is a _block box_ (a _block box_ is a box which is both _block-level_ and a _block container_).
+
+The way the reflow algorithm would work would be:
+
+1. Determine my width from the containing block
+2. Reflow children
+3. Determine my height from the sum of heights of my children (or properties like `height`)
+
+So, in this layout:
+
+```=html
+<div style="width:200px">
+  <div style="background-color:#c00000;padding:10px;min-height:30px">
+    <div style="background-color:#00c000;padding:10px;min-height:30px"></div>
+    <div style="background-color:#0000c0;padding:10px;min-height:30px">
+      <div style="background-color:#c0c000;padding:10px;min-height:30px"></div>
+      <div style="background-color:#c000c0;padding:10px;min-height:30px"></div>
+    </div>
+  </div>
+</div>
+```
+
+```=html
+<style>
+.color-red { color: #c00000 }
+.color-green { color: #00c000 }
+.color-blue { color: #0000c0 }
+.color-yellow { color: #c0c000 }
+.color-pink { color: #c000c0 }
+</style>
+```
+
+The steps, recursively, would be:
+- **Reflow the **[red]($text.attrs("color-red"))** box**
+  - Determine the **width** of the **[red]($text.attrs("color-red"))** box
+    - **Reflow the **[green]($text.attrs("color-green"))** box**
+      - Determine the **width** of the **[green]($text.attrs("color-green"))** box
+      - Determine the **height** of the **[green]($text.attrs("color-green"))** box
+    - **Reflow the **[blue]($text.attrs("color-blue"))** box**
+      - Determine the **width** of the **[blue]($text.attrs("color-blue"))** box
+        - **Reflow the **[yellow]($text.attrs("color-yellow"))** box**
+          - Determine the **width** of the **[yellow]($text.attrs("color-yellow"))** box
+          - Determine the **height** of the **[yellow]($text.attrs("color-yellow"))** box
+        - **Reflow the **[pink]($text.attrs("color-pink"))** box**
+          - Determine the **width** of the **[pink]($text.attrs("color-pink"))** box
+          - Determine the **height** of the **[pink]($text.attrs("color-pink"))** box
+      - Determine the **height** of the **[blue]($text.attrs("color-blue"))** box
+  - Determine the **height** of the **[red]($text.attrs("color-red"))** box
+
+Of course this gets _much_ more complicated with more complex layouts, but the algorithms generally work in a pretty similar way to the one I described.
+
+## Painting
+
+We now have a complete _layout tree_. To paint it, we can walk the tree, emitting "commands" for each node. For example, if an element has a background color assigned, we can emit a command to draw a rectangle on screen on the correct coordinates.
+
+When I say _emit_ what I really mean is append it to a sequence of commands which, as we discussed earlier, will be the output of the entire pipeline. The _browser_ (not _browser engine_) will then take those commands and actually draw it on screen in a platform-specific way.
+
+That was quite long, just to explain the main pipeline, huh?
+
+# My engine
+
+This whole time I haven't talked about my engine at all. And honestly, that's because I don't have much to show. I was planning on writing a post about it when it got more advanced, but I wanted to do this post explaining concepts in general. Since we're at it, here's a sneak peak of what (mostly) works:
+
+[A test page rendered on my own browser engine]($image.asset("axiom.png"))
+
+I know, it's not very amusing, and the text is barely readable[^blocky-text], but it shows it can render something. Here's the exact HTML in case you're interested:
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Test page</title>
+  </head>
+  <body>
+    <h1>Test page</h1>
+
+    <p>This is a test page.</p>
+
+    <p style="color: red">The quick brown fox jumps over the lazy dog.</p>
+    <p style="color: green">The quick brown fox jumps over the lazy dog.</p>
+    <p style="color: blue">The quick brown fox jumps over the lazy dog.</p>
+
+    <div style="background-color: #c00000; padding: 4px; color: white">
+      <div style="background-color: #00c000; padding: 4px">
+        <div style="background-color: #0000c0">
+          <p>Hello world</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+```
+
+The engine source is [on codeberg](https://codeberg.org/arnauc/axiom)
+
+[^blocky-text]: The reason the text is so blocky is that I'm also using my own font rasterizer, which doesn't render bezier curves (yet)
