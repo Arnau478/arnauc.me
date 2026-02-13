@@ -5,11 +5,11 @@
 .layout = "post.shtml",
 ---
 
-A few years ago, I started going down the rabbithole of _browser engines_. I wanted to write one, so I started looking for resources. None were as detailed as I had hoped. So, I decided to simply read the official specification (rather, the set of interleaved specifications). Understanably, the _spec_ didn't explain how a borwser engine works, just what its result should be. So I started designing a browser engine -- just to find out some time later that my design was horrible from the beginning. Well... I restarted the entire project from scratch **more than 10 times**.
+A few years ago, I started going down the rabbithole of _browser engines_. I wanted to write one, so I started looking for resources. None were as detailed as I had hoped. So, I decided to simply read the official specification (rather, the set of interleaved specifications). Understanably, the _spec_ didn't explain how a browser engine works, just what its result should be. So I started designing a browser engine -- just to find out some time later that my design was horrible from the beginning. Well... I restarted the entire project from scratch **more than 10 times**.
 
 The current iteration has lasted for half a year so far, and I'm still confident it is the right design. Finally, I feel perpared to write something I wish existed when I started: an explanation of **how browsers actually work**.
 
-# The borwser and the browser engine
+# The browser and the browser engine
 
 A _browser_ and a _browser engine_ are two distinct things. The program you install on your computer is the _browser_. It is composed of two parts: the _chrome_ (not to be confused with the _browser_ of the same name) and the _browser engine_.
 
