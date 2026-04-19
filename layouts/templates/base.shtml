@@ -21,9 +21,8 @@
     <footer>
       <hr>
       <div class="links">
-        <a href="https://x.com/arnau478" target="_blank">twitter</a>
         <a href="https://github.com/Arnau478" target="_blank">github</a>
-        <a href="https://chipburners.club/@arnau" target="_blank">fedi</a>
+        <a href="https://codeberg.org/arnauc" target="_blank">codeberg</a>
       </div>
     </footer>
   </body>
